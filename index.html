@@ -47,12 +47,16 @@
     <section id="roleScreen" class="screen hidden">
       <div class="brand"><img class="brand-mark" src="./dadae-on-mark.png" alt="다대온 로고" onerror="this.onerror=null;this.src=document.querySelector('.splash-logo').src"><div><b>다대온</b><small>모바일 학생증 · 학교생활 통합 앱</small></div></div>
       <div style="padding-top:30px"><h1>학교 계정으로<br>로그인하세요.</h1><p>다대고등학교에서 제공한 이메일과 비밀번호를 입력해 주세요.</p></div>
-      <form class="login-form" onsubmit="demoEmailLogin(event)"><label>학교 이메일<input name="email" type="email" autocomplete="email" placeholder="name@dadae.hs.kr" required></label><label>비밀번호<input name="password" type="password" autocomplete="current-password" placeholder="비밀번호 입력" required></label><label class="remember"><input name="remember" type="checkbox">로그인 유지</label><button class="primary" type="submit">로그인</button></form>
+      <form class="login-form" novalidate onsubmit="demoEmailLogin(event)"><label>학교 이메일<input name="email" type="email" autocomplete="email" placeholder="name@dadae.hs.kr" required></label><label>비밀번호<input name="password" type="password" autocomplete="current-password" placeholder="비밀번호 입력" required></label><label class="remember"><input name="remember" type="checkbox">로그인 유지</label><button class="primary" type="submit">로그인</button><p id="loginError" role="alert" style="display:none;margin:0;color:var(--red);font-size:13px"></p></form>
       <div class="demo-note">학교 계정이 기억나지 않으면 담임 선생님 또는 교무실에 문의해 주세요.</div>
     </section>
     <section id="appScreen" class="hidden"><div id="appContent" class="screen"></div><nav id="bottomNav" class="bottom-nav"></nav></section>
     <div id="modal" class="modal hidden"></div><div id="toast" class="toast hidden"></div>
   </main>
+  <script src="./firebase-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <script>
     const baseStudents = [
       {id:'s1',name:'박나빈',studentNo:'1113',grade:1,gender:'여',number:13,merit:2,demerit:0,color:'#e56c95'},
@@ -117,12 +121,35 @@
     let role = null, user = null, page='home';
     const nameOf = s => s.realName || s.name;
     const escapeHTML = value => String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
-    function persist(){localStorage.setItem('dadaeStudents',JSON.stringify(students));localStorage.setItem('dadaeRecords',JSON.stringify(records));localStorage.setItem('dadaeAttendance',JSON.stringify(attendance));localStorage.setItem('dadaeOffsetRequests',JSON.stringify(offsetRequests));}
+    let sharedRef=null, sharedReady=false, lastSharedRequestIds=null;
+    const firebaseConfig=window.DADAE_FIREBASE_CONFIG;
+    const sharedConfigured=Boolean(firebaseConfig);
+    const sharedEnabled=Boolean(firebaseConfig?.apiKey&&firebaseConfig?.databaseURL&&window.firebase);
+    if(sharedEnabled)firebase.initializeApp(firebaseConfig);
+    function statePayload(){return {students,records,attendance,offsetRequests};}
+    function saveLocal(){try{localStorage.setItem('dadaeStudents',JSON.stringify(students));localStorage.setItem('dadaeRecords',JSON.stringify(records));localStorage.setItem('dadaeAttendance',JSON.stringify(attendance));localStorage.setItem('dadaeOffsetRequests',JSON.stringify(offsetRequests));}catch(error){console.warn('기기 저장 공간이 부족합니다.',error);}}
+    function persist(){saveLocal();if(sharedRef&&sharedReady)sharedRef.set(statePayload()).catch(error=>toast('공유 저장 실패: 인터넷 연결을 확인해 주세요.'));}
+    function applySharedState(data){if(!data)return;const incoming=data.offsetRequests||[];if(lastSharedRequestIds&&role==='teacher'){
+      const fresh=incoming.filter(r=>!lastSharedRequestIds.has(r.id)&&['pending','proof-pending'].includes(r.status));
+      if(fresh.length){notificationTone();toast(`🔔 새 상쇄활동 알림 ${fresh.length}건`);}
+    }
+    lastSharedRequestIds=new Set(incoming.map(r=>r.id));students=data.students||baseStudents;records=data.records||[];attendance=data.attendance||[];offsetRequests=incoming;saveLocal();if(role)render();}
+    async function connectSharedAccount(email,password){
+      if(sharedConfigured&&!sharedEnabled)throw new Error('Firebase 설정 또는 SDK를 불러오지 못했습니다.');
+      if(!sharedEnabled)return;
+      await firebase.auth().signInWithEmailAndPassword(email,password);
+      if(sharedRef)sharedRef.off();
+      sharedRef=firebase.database().ref('demoState');sharedReady=false;lastSharedRequestIds=null;
+      const snapshot=await sharedRef.transaction(current=>current||statePayload(),undefined,false);
+      applySharedState(snapshot.snapshot.val());sharedReady=true;
+      sharedRef.on('value',snap=>applySharedState(snap.val()),error=>toast('기기 간 동기화가 끊겼습니다.'));
+    }
+    function loginError(message){const target=document.getElementById('loginError');target.textContent=message;target.style.display='block';toast(message);}
     function show(id){document.querySelectorAll('.phone > section').forEach(e=>e.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');}
     function loginWithAccount(account){role=account.role;user=role==='student'?students.find(s=>s.id===account.userId):teacher;page='home';show('appScreen');render();if(role==='teacher'){const pendingCount=offsetRequests.filter(r=>['pending','proof-pending'].includes(r.status)).length;if(pendingCount){notificationTone();toast(`🔔 확인할 상쇄활동 알림 ${pendingCount}건이 있습니다.`);}}}
-    window.addEventListener('DOMContentLoaded',()=>{const tips=['TIP · 모바일 학생증을 간편하게 사용하세요.','TIP · NFC 태그로 등교를 기록하세요.','TIP · 급식과 일정을 한눈에 확인하세요.','TIP · 상벌점을 바로 확인하세요.'];const tip=document.getElementById('splashTip');let index=0;const timer=setInterval(()=>{index=(index+1)%tips.length;tip.classList.remove('changing');void tip.offsetWidth;tip.textContent=tips[index];tip.classList.add('changing');},900);setTimeout(()=>{clearInterval(timer);document.getElementById('splashScreen').classList.add('splash-out');setTimeout(()=>{const savedEmail=localStorage.getItem('dadaeRememberedEmail');const account=demoAccounts.find(a=>a.email===savedEmail);if(account){loginWithAccount(account);toast(nameOf(user)+'님, 로그인 상태를 유지했습니다.');}else show('roleScreen');},350);},3900);});
-    function demoEmailLogin(e){e.preventDefault();const f=new FormData(e.target),email=String(f.get('email')).trim().toLowerCase(),password=String(f.get('password'));const account=demoAccounts.find(a=>a.email===email&&a.password===password);if(!account){toast('등록되지 않은 학교 이메일 또는 비밀번호입니다.');return;}if(f.get('remember'))localStorage.setItem('dadaeRememberedEmail',account.email);else localStorage.removeItem('dadaeRememberedEmail');loginWithAccount(account);toast(nameOf(user)+'님, 환영합니다.');}
-    function logout(){localStorage.removeItem('dadaeRememberedEmail');user=null;role=null;show('roleScreen');}
+    window.addEventListener('DOMContentLoaded',()=>{const tips=['TIP · 모바일 학생증을 간편하게 사용하세요.','TIP · 급식과 일정을 한눈에 확인하세요.','TIP · 상벌점을 바로 확인하세요.'];const tip=document.getElementById('splashTip');let index=0;const timer=setInterval(()=>{index=(index+1)%tips.length;tip.classList.remove('changing');void tip.offsetWidth;tip.textContent=tips[index];tip.classList.add('changing');},900);setTimeout(()=>{clearInterval(timer);document.getElementById('splashScreen').classList.add('splash-out');setTimeout(()=>{const savedEmail=localStorage.getItem('dadaeRememberedEmail');const account=demoAccounts.find(a=>a.email===savedEmail);if(account&&!sharedEnabled){loginWithAccount(account);toast(nameOf(user)+'님, 로그인 상태를 유지했습니다.');}else{show('roleScreen');if(account)document.querySelector('.login-form input[name="email"]').value=account.email;}},350);},3900);});
+    async function demoEmailLogin(e){e.preventDefault();const f=new FormData(e.target),email=String(f.get('email')||'').trim().toLowerCase(),password=String(f.get('password')||'');document.getElementById('loginError').style.display='none';if(!email||!password){loginError('학교 이메일과 비밀번호를 모두 입력해 주세요.');return;}const account=demoAccounts.find(a=>a.email===email&&a.password===password);if(!account){loginError('등록되지 않은 학교 이메일 또는 비밀번호입니다.');return;}const button=e.target.querySelector('button[type="submit"]');button.disabled=true;button.textContent='로그인 중…';try{await connectSharedAccount(email,password);if(f.get('remember'))localStorage.setItem('dadaeRememberedEmail',account.email);else localStorage.removeItem('dadaeRememberedEmail');loginWithAccount(account);toast(nameOf(user)+'님, 환영합니다.');}catch(error){loginError('공유 계정에 연결하지 못했습니다. Firebase 계정과 인터넷 연결을 확인해 주세요.');console.error(error);}finally{button.disabled=false;button.textContent='로그인';}}
+    function logout(){localStorage.removeItem('dadaeRememberedEmail');if(sharedRef)sharedRef.off();sharedRef=null;sharedReady=false;lastSharedRequestIds=null;if(sharedEnabled)firebase.auth().signOut();user=null;role=null;show('roleScreen');}
     function nav(items){document.getElementById('bottomNav').innerHTML=items.map(x=>`<button class="${page===x.id||(x.id==='id'&&page==='nfc')?'active':''}" onclick="page='${x.id}';render()"><span>${x.icon}</span>${x.label}</button>`).join('');}
     function render(){ if(role==='student') renderStudent(); else renderTeacher(); }
     function renderStudent(){const s=students.find(x=>x.id===user.id);user=s; const currentDate=todayKey(),today=attendance.find(a=>a.studentId===s.id&&a.date===currentDate),meals=menuForToday()||[]; let body='';
