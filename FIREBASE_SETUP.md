@@ -5,8 +5,8 @@ GitHub Pages는 정적 파일만 배포합니다. 신청·승인 내역을 두 �
 1. [Firebase Console](https://console.firebase.google.com/)에서 프로젝트를 만들고 웹 앱을 추가합니다.
 2. **Authentication → Sign-in method**에서 **이메일/비밀번호**를 사용 설정합니다. **Users**에서 앱의 교사 1명과 학생 4명의 이메일을 추가하고, 비밀번호를 모두 `1234567!`로 지정합니다. (앱의 이메일 목록은 `index.html`의 `demoAccounts`를 참고하세요.)
 3. **Realtime Database**를 만들고 데이터베이스 URL을 확인합니다. 공개 테스트 모드 대신 아래 규칙을 붙여 넣습니다.
-4. Firebase의 웹 앱 설정 값(`apiKey`, `authDomain`, `databaseURL`, `projectId`, `appId`)을 `firebase-config.js`의 `null` 대신 객체로 입력합니다. 예: `window.DADAE_FIREBASE_CONFIG = { apiKey: '...', authDomain: '...', databaseURL: '...', projectId: '...', appId: '...' };`
-5. 수정한 파일을 GitHub 저장소의 `main` 브랜치에 올린 뒤, Pages 배포가 끝나면 두 휴대폰에서 같은 주소를 새로고침합니다. 각 폰에서 학생/교사 계정으로 로그인하세요.
+4. 이 프로젝트의 웹 앱 설정과 데이터베이스 URL은 `firebase-config.js`에 입력되어 있습니다.
+5. 규칙을 게시한 뒤 GitHub 저장소의 `main` 브랜치에 앱 변경을 올립니다. Pages 배포가 끝나면 두 휴대폰에서 같은 주소를 새로고침하고 각각 학생/교사 계정으로 로그인합니다.
 
 시연용 Realtime Database 규칙:
 
