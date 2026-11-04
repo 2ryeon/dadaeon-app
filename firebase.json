@@ -1,9 +1,13 @@
 {
+  "database": {
+    "rules": "database.rules.json"
+  },
   "hosting": {
     "site": "dadaeon",
     "public": ".",
     "ignore": [
       "firebase.json",
+      "database.rules.json",
       ".firebaserc",
       "FIREBASE_SETUP.md",
       "HOSTING_SETUP.md",

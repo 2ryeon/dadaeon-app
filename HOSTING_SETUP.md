@@ -8,7 +8,7 @@ Windows 컴퓨터에서 한 번 배포하는 순서:
 2. [GitHub 저장소](https://github.com/2ryeon/dadaeon-app)에서 **Code → Download ZIP**을 눌러 내려받고, ZIP을 압축 해제합니다.
 3. 압축을 푼 `dadaeon-app-main` 폴더를 열고, 파일 탐색기 주소창에 `powershell`을 입력한 다음 Enter를 누릅니다.
 4. 열린 창에서 `npx firebase-tools login`을 실행합니다. Firebase 프로젝트를 만든 Google 계정으로 로그인합니다.
-5. 같은 창에서 `npx firebase-tools deploy --only hosting --project dadaeon-demo-2728f`를 실행합니다.
+5. 같은 창에서 `npx.cmd --yes firebase-tools deploy --only database,hosting --project dadaeon-demo-2728f`를 실행합니다. 이 명령은 반 커뮤니티 접근 규칙과 앱 화면을 함께 배포하며, 기존 신청 내역은 지우지 않습니다.
 6. 끝에 표시되는 Hosting URL(`https://dadaeon.web.app/`)을 열어 앱 로그인과 실시간 알림을 시험합니다. 확인 후 새 주소로 QR 코드를 다시 만듭니다.
 
-프로젝트 파일을 나중에 수정하면 다시 내려받아 3~5단계를 반복해야 Firebase Hosting에도 반영됩니다. 기존 GitHub Pages 주소는 별도로 남아 있습니다. 관리자 계정 비밀번호나 Firebase 서비스 계정 비공개 키를 채팅이나 저장소에 올리지 마세요.
+프로젝트 파일을 나중에 수정하면 다시 내려받아 3~5단계를 반복해야 Firebase Hosting에도 반영됩니다. 이미 Firebase CLI에 로그인했다면 4단계는 건너뛰어도 됩니다. 기존 GitHub Pages 주소는 별도로 남아 있습니다. 관리자 계정 비밀번호나 Firebase 서비스 계정 비공개 키를 채팅이나 저장소에 올리지 마세요.

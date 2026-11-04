@@ -1,0 +1,26 @@
+{
+  "rules": {
+    "demoState": {
+      ".read": "auth != null && (auth.token.email === 'hangidong.te@dadae.hs.kr' || auth.token.email === 'parknabin.st@dadae.hs.kr' || auth.token.email === 'seoyeona.st@dadae.hs.kr' || auth.token.email === 'jeonggiyeong.st@dadae.hs.kr' || auth.token.email === 'josoyeong.st@dadae.hs.kr')",
+      ".write": "auth != null && (auth.token.email === 'hangidong.te@dadae.hs.kr' || auth.token.email === 'parknabin.st@dadae.hs.kr' || auth.token.email === 'seoyeona.st@dadae.hs.kr' || auth.token.email === 'jeonggiyeong.st@dadae.hs.kr' || auth.token.email === 'josoyeong.st@dadae.hs.kr')"
+    },
+    "classCommunities": {
+      ".read": "auth != null && auth.token.email === 'hangidong.te@dadae.hs.kr'",
+      "$classId": {
+        ".read": "auth != null && (($classId === '11' && auth.token.email === 'parknabin.st@dadae.hs.kr') || ($classId === '13' && auth.token.email === 'seoyeona.st@dadae.hs.kr') || ($classId === '27' && auth.token.email === 'jeonggiyeong.st@dadae.hs.kr') || ($classId === '34' && auth.token.email === 'josoyeong.st@dadae.hs.kr'))",
+        "notices": {
+          "$noticeId": {
+            ".write": "auth != null && auth.token.email === 'hangidong.te@dadae.hs.kr' && !data.exists() && newData.exists()",
+            ".validate": "newData.hasChildren(['title','subject','date','supplies','detail','createdAt','senderEmail']) && newData.child('title').isString() && newData.child('title').val().length <= 80 && newData.child('subject').isString() && newData.child('date').isString() && newData.child('senderEmail').val() === auth.token.email"
+          }
+        },
+        "messages": {
+          "$messageId": {
+            ".write": "auth != null && !data.exists() && newData.exists() && (auth.token.email === 'hangidong.te@dadae.hs.kr' || ($classId === '11' && auth.token.email === 'parknabin.st@dadae.hs.kr') || ($classId === '13' && auth.token.email === 'seoyeona.st@dadae.hs.kr') || ($classId === '27' && auth.token.email === 'jeonggiyeong.st@dadae.hs.kr') || ($classId === '34' && auth.token.email === 'josoyeong.st@dadae.hs.kr'))",
+            ".validate": "newData.hasChildren(['text','senderEmail','senderName','createdAt']) && newData.child('text').isString() && newData.child('text').val().length <= 500 && newData.child('senderEmail').val() === auth.token.email && newData.child('senderName').isString() && newData.child('createdAt').isString()"
+          }
+        }
+      }
+    }
+  }
+}
